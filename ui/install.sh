@@ -1,3 +1,4 @@
 #! /bin/bash
 
-npm install
+yarn set version stable
+yarn install
