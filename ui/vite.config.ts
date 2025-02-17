@@ -5,23 +5,40 @@ import { defineConfig, splitVendorChunkPlugin } from "vite";
 import injectHTML from "vite-plugin-html-inject";
 import tsConfigPaths from "vite-tsconfig-paths";
 
-const loadExtensions = (): { name: string; config: string }[] => {
-	const extensions = process.env.DATABUTTON_EXTENSIONS;
-
-	try {
-		return JSON.parse(extensions);
-	} catch (error) {
-		console.info("No extensions found");
-		return [];
-	}
+type Extension = {
+	name: string;
+	version: string;
+	config: Record<string, unknown>;
 };
 
-const getFirebasExtensionConfig = () => {
-	const extensions = loadExtensions();
+enum ExtensionName {
+	FIREBASE_AUTH = "firebase-auth",
+}
 
-	const extension = extensions.find((it) => it.name === "firebase-auth");
+const listExtensions = (): Extension[] => {
+	if (process.env.DATABUTTON_EXTENSIONS) {
+		try {
+			return JSON.parse(process.env.DATABUTTON_EXTENSIONS) as Extension[];
+		} catch (err: unknown) {
+			console.error("Error parsing DATABUTTON_EXTENSIONS", err);
+			console.error(process.env.DATABUTTON_EXTENSIONS);
+			return [];
+		}
+	}
 
-	return extension ? extension.config : "";
+	return [];
+};
+
+const extensions = listExtensions();
+
+const getExtensionConfig = (name: string): Record<string, unknown> => {
+	const extension = extensions.find((it) => it.name === name);
+
+	if (!extension) {
+		throw new Error(`Extension ${name} not found`);
+	}
+
+	return extension.config;
 };
 
 const buildVariables = () => {
@@ -34,7 +51,9 @@ const buildVariables = () => {
 		__WS_API_URL__: JSON.stringify("ws://localhost:8000"),
 		__APP_BASE_PATH__: JSON.stringify("/"),
 		__APP_TITLE__: JSON.stringify("Databutton"),
-		__FIREBASE_CONFIG__: getFirebasExtensionConfig(),
+		__FIREBASE_CONFIG__: JSON.stringify(
+			getExtensionConfig(ExtensionName.FIREBASE_AUTH),
+		),
 	};
 
 	return defines;
@@ -46,11 +65,7 @@ export default defineConfig({
 	plugins: [react(), splitVendorChunkPlugin(), tsConfigPaths(), injectHTML()],
 	resolve: {
 		alias: {
-			resolve: {
-				alias: {
-					"@": path.resolve(__dirname, "./src"),
-				},
-			},
+			"@": path.resolve(__dirname, "./src"),
 		},
 	},
 });
