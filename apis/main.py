@@ -4,7 +4,7 @@ import importlib
 import dotenv
 import json
 
-from auth_mw import get_authorized_user
+from databutton_app.mw.auth_mw import get_authorized_user
 
 dotenv.load_dotenv()
 
