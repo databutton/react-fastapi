@@ -1,6 +1,7 @@
 #!/bin/bash
 
+corepack enable
+
 yarn set version stable
 
-# Installs from frozen lockfile
-yarn install --immutable
+yarn install 
