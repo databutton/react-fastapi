@@ -18,7 +18,12 @@ def register_routers():
             module_path = relative_path.replace(os.path.sep, ".")
             router_module = importlib.import_module(module_path)
             if hasattr(router_module, "router"):
-                app.include_router(router_module.router)
+                app.include_router(router_module.router, prefix="/routes")
+
+    # Print all registered routes
+    print("\nRegistered routes:")
+    for route in app.routes:
+        print(f"{route.methods} {route.path}")
 
 
 register_routers()
