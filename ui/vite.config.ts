@@ -31,14 +31,14 @@ const listExtensions = (): Extension[] => {
 
 const extensions = listExtensions();
 
-const getExtensionConfig = (name: string): Record<string, unknown> => {
+const getExtensionConfig = (name: string): string => {
 	const extension = extensions.find((it) => it.name === name);
 
 	if (!extension) {
 		throw new Error(`Extension ${name} not found`);
 	}
 
-	return extension.config;
+	return JSON.stringify(extension.config);
 };
 
 const buildVariables = () => {
