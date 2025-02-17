@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, params
 import os
 import importlib
 import dotenv
+import json
+
+from auth_mw import get_authorized_user
 
 dotenv.load_dotenv()
 
@@ -21,7 +24,24 @@ def register_routers():
             module_path = relative_path.replace(os.path.sep, ".")
             router_module = importlib.import_module(module_path)
             if hasattr(router_module, "router"):
-                app.include_router(router_module.router, prefix="/routes")
+                router_name = module_path.split(".")[-1]
+                with open("routers.json") as f:
+                    router_config = json.load(f)
+                    disable_auth = (
+                        router_config["routers"]
+                        .get(router_name, {})
+                        .get("disableAuth", False)
+                    )
+
+                auth_dependencies: list[params.Depends] = (
+                    [] if disable_auth else [Depends(get_authorized_user)]
+                )
+
+                app.include_router(
+                    router_module.router,
+                    prefix="/routes",
+                    dependencies=auth_dependencies,
+                )
 
     # Print all registered routes
     print("\nRegistered routes:")
