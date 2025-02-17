@@ -1,4 +1,6 @@
 #!/bin/bash
 
 yarn set version stable
-yarn install
+
+# Installs from frozen lockfile
+yarn install --immutable
