@@ -1,57 +1,97 @@
-from fastapi import Depends, FastAPI, params
 import os
-import importlib
-import dotenv
+import pathlib
 import json
-
-from databutton_app.mw.auth_mw import get_authorized_user
+import dotenv
+from fastapi import FastAPI, APIRouter, Depends
 
 dotenv.load_dotenv()
 
-app = FastAPI()
+from databutton_app.mw.auth_mw import get_authorized_user
 
 
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
+def get_router_config() -> dict:
+    try:
+        # Note: This file is not available to the agent
+        cfg = json.loads(open("routers.json").read())
+    except:
+        return False
+    return cfg
 
 
-def register_routers():
-    routes_dir = "routes"
-    for root, dirs, files in os.walk(routes_dir):
-        if "__init__.py" in files:
-            relative_path = os.path.relpath(root, ".")
-            module_path = relative_path.replace(os.path.sep, ".")
-            router_module = importlib.import_module(module_path)
-            if hasattr(router_module, "router"):
-                router_name = module_path.split(".")[-1]
-                with open("routers.json") as f:
-                    router_config = json.load(f)
-                    disable_auth = (
-                        router_config["routers"]
-                        .get(router_name, {})
-                        .get("disableAuth", False)
-                    )
+def is_auth_disabled(router_config: dict, name: str) -> bool:
+    return router_config["routers"][name]["disableAuth"]
 
-                auth_dependencies: list[params.Depends] = (
-                    [] if disable_auth else [Depends(get_authorized_user)]
+
+def import_api_routers() -> APIRouter:
+    """Create top level router including all user defined endpoints."""
+    routes = APIRouter(prefix="/routes")
+
+    router_config = get_router_config()
+
+    src_path = pathlib.Path(__file__).parent
+
+    # Import API routers from "src/app/apis/*/__init__.py"
+    apis_path = src_path / "routes"
+
+    api_names = [
+        p.relative_to(apis_path).parent.as_posix()
+        for p in apis_path.glob("*/__init__.py")
+    ]
+
+    api_module_prefix = "app.apis."
+
+    for name in api_names:
+        print(f"Importing API: {name}")
+        try:
+            api_module = __import__(api_module_prefix + name, fromlist=[name])
+            api_router = getattr(api_module, "router", None)
+            if isinstance(api_router, APIRouter):
+                routes.include_router(
+                    api_router,
+                    dependencies=(
+                        []
+                        if is_auth_disabled(router_config, name)
+                        else [Depends(get_authorized_user)]
+                    ),
                 )
+        except Exception:
+            continue
 
-                app.include_router(
-                    router_module.router,
-                    prefix="/routes",
-                    dependencies=auth_dependencies,
-                )
-
-    # Print all registered routes
-    print("\nRegistered routes:")
-    for route in app.routes:
-        print(f"{route.methods} {route.path}")
+    return routes
 
 
-register_routers()
+def get_firebase_config() -> dict | None:
+    extensions = os.environ.get("DATABUTTON_EXTENSIONS", "[]")
+    extensions = json.loads(extensions)
 
-if __name__ == "__main__":
-    import uvicorn
+    for ext in extensions:
+        if ext["name"] == "firebase-auth":
+            return ext["config"]["firebaseConfig"]
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    return {}
+
+
+def create_app() -> FastAPI:
+    """Create the app. This is called by uvicorn with the factory option to construct the app object."""
+    app = FastAPI()
+    app.include_router(import_api_routers())
+
+    firebase_config = get_firebase_config()
+
+    if firebase_config is None:
+        print("No firebase config found")
+        pass
+    else:
+        print("Firebase config found")
+        auth_config = {
+            "jwks_url": "https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com",
+            "audience": firebase_config["projectId"],
+            "header": "authorization",
+        }
+
+        app.state.databutton_app_state = {"auth_config": auth_config}
+
+    return app
+
+
+app = create_app()
