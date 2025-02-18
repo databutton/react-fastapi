@@ -1,11 +1,11 @@
 install-apis:
-	chmod +x apis/install.sh
-	chmod +x apis/run.sh
-	cd apis && ./install.sh
+	chmod +x backend/install.sh
+	chmod +x backend/run.sh
+	cd backend && ./install.sh
 
 install-ui:
-	chmod +x ui/install.sh
-	chmod +x ui/run.sh
-	cd ui && ./install.sh
+	chmod +x frontend/install.sh
+	chmod +x frontend/run.sh
+	cd frontend && ./install.sh
 
-install: install-apis install-ui
+install: install-backend install-frontend

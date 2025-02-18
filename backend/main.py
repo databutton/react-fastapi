@@ -31,7 +31,7 @@ def import_api_routers() -> APIRouter:
     src_path = pathlib.Path(__file__).parent
 
     # Import API routers from "src/app/apis/*/__init__.py"
-    apis_path = src_path / "routes"
+    apis_path = src_path / "app" / "apis"
 
     api_names = [
         p.relative_to(apis_path).parent.as_posix()
@@ -54,8 +54,11 @@ def import_api_routers() -> APIRouter:
                         else [Depends(get_authorized_user)]
                     ),
                 )
-        except Exception:
+        except Exception as e:
+            print(e)
             continue
+
+    print(routes.routes)
 
     return routes
 
@@ -75,6 +78,11 @@ def create_app() -> FastAPI:
     """Create the app. This is called by uvicorn with the factory option to construct the app object."""
     app = FastAPI()
     app.include_router(import_api_routers())
+
+    for route in app.routes:
+        if hasattr(route, "methods"):
+            for method in route.methods:
+                print(f"{method} {route.path}")
 
     firebase_config = get_firebase_config()
 
