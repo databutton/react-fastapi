@@ -6,7 +6,7 @@ from fastapi import FastAPI, APIRouter, Depends
 
 dotenv.load_dotenv()
 
-from databutton_app.mw.auth_mw import get_authorized_user
+from databutton_app.mw.auth_mw import AuthConfig, get_authorized_user
 
 
 def get_router_config() -> dict:
@@ -88,7 +88,7 @@ def create_app() -> FastAPI:
 
     if firebase_config is None:
         print("No firebase config found")
-        pass
+        app.state.auth_config = None
     else:
         print("Firebase config found")
         auth_config = {
@@ -97,9 +97,10 @@ def create_app() -> FastAPI:
             "header": "authorization",
         }
 
-        app.state.databutton_app_state = {"auth_config": auth_config}
+        app.state.auth_config = AuthConfig(**auth_config)
 
     return app
 
 
 app = create_app()
+r

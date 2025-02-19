@@ -27,9 +27,8 @@ class User(BaseModel):
 
 
 def get_auth_config(request: HTTPConnection) -> AuthConfig:
-    auth_config: AuthConfig | None = getattr(
-        request.app.state.databutton_app_state, "auth_config", None
-    )
+    auth_config: AuthConfig | None = request.app.state.auth_config
+
     if auth_config is None:
         raise HTTPException(
             status_code=HTTPStatus.UNAUTHORIZED, detail="No auth config"
