@@ -9,3 +9,11 @@ install-frontend:
 	cd frontend && ./install.sh
 
 install: install-backend install-frontend
+
+run-backend:
+	cd backend && ./run.sh
+
+run-frontend:
+	cd frontend && ./run.sh
+
+.DEFAULT_GOAL := install
