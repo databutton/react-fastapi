@@ -38,7 +38,7 @@ const getExtensionConfig = (name: string): string => {
 		console.warn(`Extension ${name} not found`);
 	}
 
-	return JSON.stringify(extension.config);
+	return JSON.stringify(extension?.config);
 };
 
 const buildVariables = () => {
