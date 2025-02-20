@@ -35,7 +35,7 @@ const getExtensionConfig = (name: string): string => {
 	const extension = extensions.find((it) => it.name === name);
 
 	if (!extension) {
-		throw new Error(`Extension ${name} not found`);
+		console.warn(`Extension ${name} not found`);
 	}
 
 	return JSON.stringify(extension.config);
