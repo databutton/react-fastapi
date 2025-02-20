@@ -71,7 +71,7 @@ def get_firebase_config() -> dict | None:
         if ext["name"] == "firebase-auth":
             return ext["config"]["firebaseConfig"]
 
-    return {}
+    return None
 
 
 def create_app() -> FastAPI:
