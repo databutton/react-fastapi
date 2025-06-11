@@ -13,6 +13,7 @@ type Extension = {
 
 enum ExtensionName {
 	FIREBASE_AUTH = "firebase-auth",
+	STACK_AUTH = "stack-auth"
 }
 
 const listExtensions = (): Extension[] => {
@@ -47,6 +48,8 @@ const buildVariables = () => {
 	const defines: Record<string, string> = {
 		__APP_ID__: JSON.stringify(appId),
 		__API_PATH__: JSON.stringify(""),
+		__API_HOST__: JSON.stringify(""),
+		__API_PREFIX_PATH__: JSON.stringify(""),
 		__API_URL__: JSON.stringify("http://localhost:8000"),
 		__WS_API_URL__: JSON.stringify("ws://localhost:8000"),
 		__APP_BASE_PATH__: JSON.stringify("/"),
@@ -56,6 +59,7 @@ const buildVariables = () => {
 		__APP_DEPLOY_USERNAME__: JSON.stringify(""),
 		__APP_DEPLOY_APPNAME__: JSON.stringify(""),
 		__APP_DEPLOY_CUSTOM_DOMAIN__: JSON.stringify(""),
+		__STACK_AUTH_CONFIG__: JSON.stringify(getExtensionConfig(ExtensionName.STACK_AUTH)),
 		__FIREBASE_CONFIG__: JSON.stringify(
 			getExtensionConfig(ExtensionName.FIREBASE_AUTH),
 		),
