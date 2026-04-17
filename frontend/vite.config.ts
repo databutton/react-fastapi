@@ -32,14 +32,33 @@ const listExtensions = (): Extension[] => {
 
 const extensions = listExtensions();
 
-const getExtensionConfig = (name: string): string => {
+const getExtensionConfig = (name: string): Record<string, unknown> | undefined => {
 	const extension = extensions.find((it) => it.name === name);
 
 	if (!extension) {
 		console.warn(`Extension ${name} not found`);
+		return undefined;
 	}
 
-	return JSON.stringify(extension?.config);
+	return extension.config;
+};
+
+/**
+ * Validates that Firebase config has all required keys.
+ * Returns true only if apiKey, projectId, and appId are present and non-empty.
+ * Implements "Atomic Config or Nothing" principle - config must be complete or not used.
+ */
+const isFirebaseConfigComplete = (
+	config: Record<string, unknown> | undefined,
+): boolean => {
+	if (!config) return false;
+
+	const requiredKeys = ["apiKey", "projectId", "appId"];
+
+	return requiredKeys.every((key) => {
+		const value = config[key];
+		return typeof value === "string" && value.trim().length > 0;
+	});
 };
 
 const buildVariables = () => {
@@ -59,11 +78,23 @@ const buildVariables = () => {
 		__APP_DEPLOY_USERNAME__: JSON.stringify(""),
 		__APP_DEPLOY_APPNAME__: JSON.stringify(""),
 		__APP_DEPLOY_CUSTOM_DOMAIN__: JSON.stringify(""),
-		__STACK_AUTH_CONFIG__: JSON.stringify(getExtensionConfig(ExtensionName.STACK_AUTH)),
-		__FIREBASE_CONFIG__: JSON.stringify(
-			getExtensionConfig(ExtensionName.FIREBASE_AUTH),
+		__STACK_AUTH_CONFIG__: JSON.stringify(
+			JSON.stringify(getExtensionConfig(ExtensionName.STACK_AUTH)),
 		),
 	};
+
+	// Only inject Firebase config if it's complete with all required keys
+	// Implements "Atomic Config or Nothing" to prevent auth/invalid-api-key errors
+	const firebaseConfig = getExtensionConfig(ExtensionName.FIREBASE_AUTH);
+	if (isFirebaseConfigComplete(firebaseConfig)) {
+		defines.__FIREBASE_CONFIG__ = JSON.stringify(JSON.stringify(firebaseConfig));
+		console.log("Firebase config validated and injected successfully");
+	} else {
+		console.warn(
+			"Firebase config is incomplete (missing apiKey, projectId, or appId). " +
+				"Skipping injection to prevent auth errors in Preview.",
+		);
+	}
 
 	return defines;
 };
