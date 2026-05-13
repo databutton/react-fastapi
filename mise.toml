@@ -1,0 +1,14 @@
+[tools]
+node = "22"
+
+[tasks.install]
+run = "make install"
+
+[tasks.lint]
+run = "cd frontend && yarn install --immutable && yarn lint"
+
+[tasks.format]
+run = "cd frontend && yarn install --immutable && yarn format:write"
+
+[tasks.test]
+run = "cd frontend && yarn test"
